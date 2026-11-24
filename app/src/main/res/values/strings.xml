@@ -1,0 +1,269 @@
+<resources>
+    <string name="app_name">Finance Tracker</string>
+
+    <!-- App lock -->
+    <string name="unlock">Unlock</string>
+    <string name="unlock_prompt_title">Unlock Finance Tracker</string>
+    <string name="no_screen_lock">Set a screen lock to use Finance Tracker</string>
+    <string name="open_settings">Open settings</string>
+
+    <!-- Home -->
+    <string name="net_worth">Net worth</string>
+    <string name="all_transactions">All transactions</string>
+    <string name="empty_transactions">No transactions yet</string>
+    <string name="add_account">Add account</string>
+    <string name="add">Add</string>
+    <string name="add_menu_transaction">Transaction</string>
+    <string name="add_menu_transfer">Transfer</string>
+    <string name="uncategorised">Uncategorised</string>
+    <string name="transfer">Transfer</string>
+    <string name="transfer_to">To %1$s</string>
+    <string name="transfer_from">From %1$s</string>
+
+    <!-- Account detail -->
+    <string name="transactions">Transactions</string>
+    <string name="delete_account">Delete account</string>
+    <string name="delete_account_title">Delete this account?</string>
+    <string name="archive_account">Archive account</string>
+    <string name="archive_account_title">Archive this account?</string>
+    <string name="archive_account_text">It leaves Home and the pickers. Its transactions stay.</string>
+    <string name="archive">Archive</string>
+
+    <!-- Forms -->
+    <string name="back">Back</string>
+    <string name="save">Save</string>
+    <string name="saved">Saved</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="error_amount">Enter an amount</string>
+    <string name="delete">Delete</string>
+
+    <!-- Account form -->
+    <string name="new_account">New account</string>
+    <string name="account_name">Name</string>
+    <string name="error_name">Enter a name</string>
+    <string name="account_type">Type</string>
+    <string name="account_type_current">Current</string>
+    <string name="account_type_savings">Savings</string>
+    <string name="account_type_credit_card">Credit card</string>
+    <string name="account_type_cash">Cash</string>
+    <string name="starting_balance">Starting balance</string>
+    <string name="currency">Currency</string>
+
+    <!-- Transaction form -->
+    <string name="new_transaction">New transaction</string>
+    <string name="edit_transaction">Edit transaction</string>
+    <string name="delete_transaction_title">Delete this transaction?</string>
+    <string name="expense">Expense</string>
+    <string name="income">Income</string>
+    <string name="amount">Amount</string>
+    <string name="account">Account</string>
+    <string name="category">Category</string>
+    <string name="error_category">Pick a category</string>
+    <string name="date">Date</string>
+    <string name="time_optional">Time (optional)</string>
+    <string name="clear_time">Clear time</string>
+    <string name="merchant_optional">Merchant (optional)</string>
+    <string name="note_optional">Note (optional)</string>
+
+    <!-- Transfer form -->
+    <string name="new_transfer">New transfer</string>
+    <string name="edit_transfer">Edit transfer</string>
+    <string name="transfer_from_account">From</string>
+    <string name="transfer_to_account">To</string>
+    <string name="error_same_account">Pick a different account</string>
+    <string name="delete_transfer_title">Delete this transfer?</string>
+    <string name="delete_transfer_text">Both sides of the transfer will be deleted.</string>
+
+    <!-- Category picker -->
+    <string name="spending">Spending</string>
+
+    <!-- Settings -->
+    <string name="settings">Settings</string>
+    <string name="categories">Categories</string>
+    <string name="merchants">Merchants</string>
+
+    <!-- Merchants screen -->
+    <string name="no_default_category">No default category</string>
+    <string name="no_merchants">No merchants yet. They are added when you enter a transaction.</string>
+    <string name="edit_merchant">Edit merchant</string>
+    <string name="merchant_name">Name</string>
+    <string name="merchant_keywords">Keywords</string>
+    <string name="merchant_keywords_hint">Separate keywords with commas</string>
+    <string name="default_category">Default category</string>
+    <string name="error_merchant_name_taken">There is already a merchant with this name</string>
+    <!-- %1$s is the Merchant's name, as the owner wrote it. -->
+    <string name="delete_merchant_title">Delete %1$s?</string>
+    <plurals name="delete_merchant_text">
+        <item quantity="one">Its %d transaction keeps its amount and category but will have no merchant.</item>
+        <item quantity="other">Its %d transactions keep their amounts and categories but will have no merchant.</item>
+    </plurals>
+    <string name="delete_merchant_unused">It is not used by any transaction.</string>
+
+    <!-- Category dialog -->
+    <string name="new_category">New category</string>
+    <string name="edit_category">Edit category</string>
+    <string name="category_name">Name</string>
+    <string name="category_place">Place</string>
+    <string name="category_place_spending">Spending (top level)</string>
+    <string name="category_place_income">Income (top level)</string>
+    <string name="add_category">Add category</string>
+    <string name="move_up">Move up</string>
+    <string name="move_down">Move down</string>
+    <string name="error_category_name_taken">There is already a category with this name here</string>
+    <string name="delete_category_title">Delete this category?</string>
+    <string name="delete_subcategories_first">Delete its subcategories first</string>
+    <string name="delete_subcategories_first_text">Only a category without subcategories can be deleted.</string>
+    <plurals name="move_transactions_to">
+        <item quantity="one">Move its %d transaction to</item>
+        <item quantity="other">Move its %d transactions to</item>
+    </plurals>
+
+    <!-- Bottom bar -->
+    <string name="nav_home">Home</string>
+    <string name="nav_metrics">Metrics</string>
+
+    <!-- Metrics -->
+    <string name="metrics">Metrics</string>
+    <string name="empty_metrics">No Metrics yet</string>
+    <string name="new_metric">New Metric</string>
+    <string name="metric_includes_uncategorised">Includes %1$s Uncategorised</string>
+    <string name="metric_no_value">—</string>
+    <string name="metric_percentage">%1$s%%</string>
+    <string name="metric_divide_by_zero">Can\'t divide by zero: %1$s is %2$s in this period</string>
+    <string name="metric_points">%1$s pp</string>
+    <string name="metric_points_spoken">%1$s percentage points</string>
+    <string name="metric_previous_period_zero">%1$s was zero in the previous period</string>
+    <string name="metric_choose_metrics">Choose the Metrics to combine</string>
+    <string name="metric_refused_difference">A difference needs two Metrics in the same unit</string>
+    <string name="metric_refused_ratio">A ratio works for money ÷ money, count ÷ count or money ÷ count</string>
+    <string name="metric_refused_change">A change can\'t be combined again</string>
+    <string name="metric_refused_itself">A Metric can\'t be built from itself</string>
+    <string name="metric_no_transactions">No Transactions in this period</string>
+
+    <!-- Metric builder -->
+    <string name="edit_metric">Edit Metric</string>
+    <string name="metric_name">Name</string>
+    <string name="metric_summary">%1$s · %2$s · %3$s</string>
+    <string name="metric_categories">Categories</string>
+    <string name="metric_all_categories">All categories</string>
+    <string name="metric_merchants">Merchants</string>
+    <string name="metric_all_merchants">All merchants</string>
+    <string name="metric_merchant_search">Search merchants</string>
+    <string name="metric_no_merchants_match">No merchants match</string>
+    <string name="metric_merchants_gone">No merchants left</string>
+    <string name="metric_accounts">Accounts</string>
+    <string name="metric_all_accounts">All accounts</string>
+    <string name="metric_measure">Measure</string>
+    <string name="measure_sum">Sum</string>
+    <string name="measure_count">Count</string>
+    <string name="measure_average_per_transaction">Average per transaction</string>
+    <string name="measure_average_per_day">Average per day</string>
+    <string name="measure_average_per_week">Average per week</string>
+    <string name="measure_average_per_month">Average per month</string>
+    <string name="metric_period">Period</string>
+    <string name="period_this_week">This week</string>
+    <string name="period_this_month">This month</string>
+    <string name="period_this_year">This year</string>
+    <string name="period_custom">Custom dates</string>
+    <string name="metric_divide_by">Divide by</string>
+    <string name="divisor_every_day">Every day</string>
+    <string name="divisor_every_week">Every week</string>
+    <string name="divisor_every_month">Every month</string>
+    <string name="divisor_days_with_transactions">Only days with Transactions</string>
+    <string name="divisor_weeks_with_transactions">Only weeks with Transactions</string>
+    <string name="divisor_months_with_transactions">Only months with Transactions</string>
+    <plurals name="divided_by_days">
+        <item quantity="one">÷ %d day</item>
+        <item quantity="other">÷ %d days</item>
+    </plurals>
+    <plurals name="divided_by_weeks">
+        <item quantity="one">÷ %d week</item>
+        <item quantity="other">÷ %d weeks</item>
+    </plurals>
+    <plurals name="divided_by_months">
+        <item quantity="one">÷ %d month</item>
+        <item quantity="other">÷ %d months</item>
+    </plurals>
+    <plurals name="divided_by_days_with_transactions">
+        <item quantity="one">÷ %d day with Transactions</item>
+        <item quantity="other">÷ %d days with Transactions</item>
+    </plurals>
+    <plurals name="divided_by_weeks_with_transactions">
+        <item quantity="one">÷ %d week with Transactions</item>
+        <item quantity="other">÷ %d weeks with Transactions</item>
+    </plurals>
+    <plurals name="divided_by_months_with_transactions">
+        <item quantity="one">÷ %d month with Transactions</item>
+        <item quantity="other">÷ %d months with Transactions</item>
+    </plurals>
+    <string name="period_from">From</string>
+    <string name="period_to">To</string>
+    <string name="metric_combined">Combined</string>
+    <string name="metric_combined_summary">%1$s · %2$s</string>
+    <string name="metric_combine">Combine</string>
+    <string name="combination_ratio">Ratio (A ÷ B)</string>
+    <string name="combination_difference">Difference (A − B)</string>
+    <string name="combination_change">Change vs previous period</string>
+    <string name="metric_side_a">Metric A</string>
+    <string name="metric_side_b">Metric B</string>
+    <string name="metric_period_both_sides">This period applies to both Metrics</string>
+    <string name="delete_metric_title">Delete this Metric?</string>
+    <string name="metric_used_by">Used by %1$s</string>
+    <string name="metric_no_sides">No other Metrics to combine yet. Save a simple Metric first.</string>
+    <string name="done">Done</string>
+
+    <!-- KPIs -->
+    <string name="pin_as_kpi">Pin as KPI</string>
+    <string name="kpi">KPI</string>
+    <string name="kpi_target">Target (optional)</string>
+    <string name="kpi_lower_is_better">Lower is better</string>
+    <string name="kpi_higher_is_better">Higher is better</string>
+    <string name="kpi_error_direction">Pick a direction for the target</string>
+    <string name="kpi_error_target">Enter the target as a number in this Metric\'s unit</string>
+    <string name="verdict_on_pace">%1$s so far, on pace for %2$s of %3$s: %4$s</string>
+    <string name="verdict_against_target">Target %1$s: %2$s</string>
+    <string name="verdict_on_track">on track</string>
+    <string name="verdict_off_track">off track</string>
+    <string name="verdict_better">Better than last period (%1$s)</string>
+    <string name="verdict_worse">Worse than last period (%1$s)</string>
+
+    <!-- KPI tiles on Home -->
+    <string name="kpi_on_track">On track</string>
+    <string name="kpi_off_track">Off track</string>
+    <string name="kpi_better">Better</string>
+    <string name="kpi_worse">Worse</string>
+    <string name="kpi_no_value">No value</string>
+    <!-- Under a KPI's value: the target it is judged against as it stands. -->
+    <string name="kpi_target_text">target %1$s</string>
+    <!-- A KPI tile read aloud: its name, its value and its Verdict word. -->
+    <string name="kpi_tile_description">%1$s, %2$s, %3$s</string>
+    <!-- A KPI tile with no Verdict read aloud: its name and its value. -->
+    <string name="kpi_tile_description_no_verdict">%1$s, %2$s</string>
+    <string name="kpi_suggested">Suggested KPIs</string>
+    <string name="kpi_suggestion_spending">Spending this month</string>
+    <string name="kpi_suggestion_savings_rate">Savings rate</string>
+    <string name="kpi_suggestion_groceries">Groceries this month</string>
+    <string name="kpi_suggestion_income">Income this month</string>
+    <string name="kpi_suggestion_savings">Savings this month</string>
+    <string name="kpi_build_metric">Build a Metric</string>
+    <!-- A 2×1 KPI tile's sparkline read aloud, one per kind of period. -->
+    <string name="kpi_sparkline_weeks">Trend over the last 6 weeks</string>
+    <string name="kpi_sparkline_months">Trend over the last 6 months</string>
+    <string name="kpi_sparkline_years">Trend over the last 6 years</string>
+    <!-- Accessibility actions that move a KPI tile one place in the owner's order. -->
+    <string name="kpi_move_earlier">Move earlier</string>
+    <string name="kpi_move_later">Move later</string>
+    <!-- KPI detail -->
+    <string name="kpi_remove">Remove from KPIs</string>
+    <string name="kpi_wide_tile">Full-width tile</string>
+    <string name="kpi_wide_tile_supporting">Adds a trend of the last 6 periods</string>
+    <string name="kpi_last_months">Last 12 months</string>
+    <string name="kpi_last_weeks">Last 12 weeks</string>
+    <string name="kpi_last_years">Last 12 years</string>
+    <!-- A period in a KPI's list that is still going, e.g. "March 2026 · so far". -->
+    <string name="kpi_period_so_far">%1$s · so far</string>
+    <!-- A week in a KPI's list, by its Monday, e.g. "Week of 9 Mar". -->
+    <string name="kpi_week_of">Week of %1$s</string>
+    <string name="kpi_chart_description">Bar chart of the last 12 periods; values listed below</string>
+</resources>

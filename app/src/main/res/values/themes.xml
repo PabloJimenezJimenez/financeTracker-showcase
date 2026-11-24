@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.FinanceTracker" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- androidx.biometric draws its own fingerprint dialog on Android 8.x with AppCompat,
+             which needs an AppCompat dialog theme. -->
+        <item name="alertDialogTheme">@style/Theme.AppCompat.DayNight.Dialog.Alert</item>
+    </style>
+</resources>

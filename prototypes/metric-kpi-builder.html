@@ -1,0 +1,898 @@
+<title>Metric and KPI builder</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+<style>
+/* Layout: a phone-sized builder beside the model's state and guided walkthroughs; stacks on a phone.
+   Palette: the app's grey fallback scheme from docs/design.md (greys first, one dark hero tile). */
+:root {
+  --page: #F9F9F9;
+  --tile: #F0F0F0;
+  --tile-2: #E9E9E9;
+  --tile-3: #E2E2E2;
+  --ink: #141414;
+  --ink-2: #525252;
+  --outline: #757575;
+  --hair: #D6D6D6;
+  --hero: #2B2B2B;
+  --on-hero: #F0F0F0;
+  --error: #B3261E;
+  --error-bg: #F9DEDC;
+  --on-error-bg: #410E0B;
+  --info-bg: #E2E2E2;
+  --changed: #FFF3B0;
+  --on-changed: #141414;
+  --serif: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #0E0E0E; --tile: #161616; --tile-2: #1C1C1C; --tile-3: #252525;
+    --ink: #EDEDED; --ink-2: #A6A6A6; --outline: #808080; --hair: #2E2E2E;
+    --hero: #E2E2E2; --on-hero: #1C1C1C;
+    --error: #F2B8B5; --error-bg: #8C1D18; --on-error-bg: #F9DEDC; --info-bg: #252525;
+    --changed: #4A4220; --on-changed: #F5EBC0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #0E0E0E; --tile: #161616; --tile-2: #1C1C1C; --tile-3: #252525;
+  --ink: #EDEDED; --ink-2: #A6A6A6; --outline: #808080; --hair: #2E2E2E;
+  --hero: #E2E2E2; --on-hero: #1C1C1C;
+  --error: #F2B8B5; --error-bg: #8C1D18; --on-error-bg: #F9DEDC; --info-bg: #252525;
+  --changed: #4A4220; --on-changed: #F5EBC0;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--page); color: var(--ink); font-family: var(--sans); font-size: 14px;
+  line-height: 1.45; font-feature-settings: "tnum";
+}
+.wrap {
+  max-width: 1180px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 64px;
+}
+header.top { display: flex; flex-direction: column; gap: 8px; max-width: 70ch; }
+.eyebrow { font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+h1 { font-family: var(--serif); font-weight: 400; font-size: 40px; line-height: 1.1; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--serif); font-weight: 400; font-size: 24px; line-height: 1.25; margin: 0; text-wrap: balance; }
+h3 { font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); margin: 0; }
+p { margin: 0; }
+.lede { color: var(--ink-2); font-size: 15px; }
+.grid { display: grid; grid-template-columns: 400px minmax(0, 1fr); gap: 32px; margin-top: 32px; align-items: start; }
+@media (max-width: 900px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* phone */
+.phone {
+  border: 1px solid var(--hair); border-radius: 36px; background: var(--page);
+  padding: 20px 16px 24px; display: flex; flex-direction: column; gap: 16px;
+  position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px);
+  max-height: calc(100vh - 32px); overflow-y: auto;
+}
+@media (max-width: 900px) { .phone { position: static; max-height: none; border-radius: 24px; } }
+.phone-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.name-input {
+  width: 100%; font-family: var(--serif); font-size: 24px; line-height: 1.25; color: var(--ink);
+  background: transparent; border: none; border-bottom: 1px solid var(--hair); padding: 2px 0 6px;
+}
+.name-input:focus { outline: none; border-bottom-color: var(--outline); }
+.hero { background: var(--hero); color: var(--on-hero); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.hero .cap { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
+.hero .val { font-family: var(--serif); font-size: 44px; line-height: 1.05; overflow-wrap: anywhere; }
+.hero .val.na { font-size: 26px; }
+.hero ul { margin: 0; padding-left: 16px; font-size: 13px; display: flex; flex-direction: column; gap: 2px; }
+.bars { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; align-items: end; height: 84px; }
+.bar { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; height: 100%; min-width: 0; }
+.bar i { display: block; width: 100%; border-radius: 4px 4px 0 0; background: currentColor; opacity: 0.45; min-height: 2px; }
+.bar.cur i { opacity: 1; }
+.bar.none i { opacity: 0; }
+.bar span { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.bar b { font-weight: 500; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 500; border: 1px solid currentColor; letter-spacing: 0; text-transform: none; }
+.pill.solid { background: var(--on-hero); color: var(--hero); border-color: var(--on-hero); }
+
+.section { display: flex; flex-direction: column; gap: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font: inherit; font-size: 13px; color: var(--ink); background: var(--tile); border: 1px solid var(--hair);
+  border-radius: 10px; padding: 7px 12px; cursor: pointer; min-height: 36px;
+}
+.chip:hover { background: var(--tile-2); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
+.chip.dim { color: var(--ink-2); border-style: dashed; }
+.chip:focus-visible, .btn:focus-visible, .step:focus-visible, .tab:focus-visible, .row-btn:focus-visible { outline: 2px solid var(--outline); outline-offset: 2px; }
+.filter-row { display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--hair); padding-top: 8px; }
+.filter-row:first-of-type { border-top: none; padding-top: 0; }
+.row-btn { all: unset; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; font-size: 14px; padding: 4px 0; }
+.row-btn span:last-child { color: var(--ink-2); text-align: right; }
+.sub { font-size: 12px; color: var(--ink-2); }
+select, input[type="number"], input[type="date"] {
+  font: inherit; color: var(--ink); background: var(--tile-3); border: 1px solid var(--outline);
+  border-radius: 8px; padding: 7px 10px; min-height: 36px; max-width: 100%;
+}
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-2); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { font: inherit; font-weight: 500; border-radius: 999px; padding: 10px 18px; cursor: pointer; border: 1px solid var(--outline); background: transparent; color: var(--ink); min-height: 40px; }
+.btn.primary { background: var(--ink); color: var(--page); border-color: var(--ink); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.notice { border-radius: 12px; padding: 10px 12px; font-size: 13px; }
+.notice.rejected { background: var(--error-bg); color: var(--on-error-bg); }
+.notice.info { background: var(--info-bg); color: var(--ink); }
+.notice strong { font-weight: 600; }
+.saved-list { display: flex; flex-direction: column; gap: 8px; }
+.saved-tile { all: unset; cursor: pointer; display: flex; justify-content: space-between; gap: 12px; align-items: center; background: var(--tile); border: 1px solid var(--hair); border-radius: 16px; padding: 12px 14px; }
+.saved-tile.active { border-color: var(--outline); }
+.saved-tile .nm { font-weight: 500; }
+.saved-tile .v { font-weight: 500; white-space: nowrap; }
+
+/* right column */
+.side { display: flex; flex-direction: column; gap: 32px; min-width: 0; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tab { font: inherit; font-size: 13px; background: transparent; color: var(--ink-2); border: 1px solid var(--hair); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+.tab[aria-selected="true"] { color: var(--page); background: var(--ink); border-color: var(--ink); }
+.walk { display: flex; flex-direction: column; gap: 12px; background: var(--tile); border-radius: 20px; padding: 20px; }
+.walk p { max-width: 70ch; }
+.steps { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; counter-reset: s; }
+.step { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 8px; align-items: baseline; padding: 8px 10px; border-radius: 10px; border: 1px solid transparent; color: var(--ink-2); }
+.step .n { font-weight: 500; }
+.step.done { color: var(--ink-2); text-decoration: line-through; text-decoration-color: var(--hair); }
+.step.next { color: var(--ink); border-color: var(--outline); background: var(--page); }
+.step[disabled] { cursor: default; }
+.state { display: flex; flex-direction: column; gap: 12px; }
+.kv { display: grid; grid-template-columns: minmax(110px, 160px) minmax(0, 1fr); border-top: 1px solid var(--hair); }
+.kv > div { padding: 7px 8px 7px 0; border-bottom: 1px solid var(--hair); min-width: 0; overflow-wrap: anywhere; }
+.kv > div.k { color: var(--ink-2); }
+.kv > div.ch { background: var(--changed); color: var(--on-changed); padding-left: 6px; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 7px 10px 7px 0; border-bottom: 1px solid var(--hair); vertical-align: top; }
+th { font-weight: 500; color: var(--ink-2); font-size: 12px; }
+td.num { text-align: right; white-space: nowrap; }
+.decisions { display: flex; flex-direction: column; gap: 10px; }
+.decisions ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; max-width: 75ch; }
+.lastaction { font-size: 13px; color: var(--ink-2); }
+@media (prefers-reduced-motion: no-preference) { .chip, .btn, .step { transition: background-color 150ms, color 150ms; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="eyebrow">Prototype · throwaway · sample data, not yours</span>
+    <h1>Metric and KPI builder</h1>
+    <p class="lede">Which pieces does the builder need, and how do they combine? Build Metrics from pieces (what to count, which Transactions, how to measure, over which period), combine saved Metrics, and pin one as a KPI with a target and a direction. The numbers come from four months of made-up Transactions, July to 20 October 2026.</p>
+  </header>
+
+  <div class="grid">
+    <section class="phone" id="phone" aria-label="Builder"></section>
+    <div class="side">
+      <section class="walkthroughs" aria-label="Guided walkthroughs">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <h2>Walkthroughs</h2>
+          <div class="tabs" role="tablist" id="tabs"></div>
+          <div id="walk"></div>
+        </div>
+      </section>
+      <section class="state" aria-label="What the model holds">
+        <h2>What the model holds now</h2>
+        <p class="lastaction" id="lastaction"></p>
+        <div id="state"></div>
+      </section>
+      <section class="decisions">
+        <h2>What this prototype proposes</h2>
+        <ol>
+          <li><strong>Four pieces per Metric</strong>: start from Spending or Income, narrow by Category, Merchant and Account (any of each), measure (sum, count, or an average), and a period.</li>
+          <li><strong>Combining is its own kind of Metric</strong>: ratio (A ÷ B), difference (A − B) or change against the previous period, over saved Metrics. Combined Metrics can be combined again, which is how a savings rate gets built.</li>
+          <li><strong>A combined Metric sets one period for both sides</strong>; the period saved on each side is ignored.</li>
+          <li><strong>Units are checked</strong>: only Metrics of the same unit can be subtracted; money ÷ money and count ÷ count give a percentage; money ÷ count gives money per transaction; everything else is refused.</li>
+          <li><strong>A KPI is a pinned Metric</strong> with an optional target in the Metric's own unit and an optional direction. For sums and counts in an unfinished period, status uses the pace projection; without a target, the direction compares with the previous period.</li>
+        </ol>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================== Pure module: no DOM below this line until "Page" ===================== */
+const Model = (() => {
+  const TODAY = '2026-10-20';
+  const FIRST_DATE = '2026-07-01';
+  const UNCAT = 'uncat';
+
+  const ACCOUNTS = [
+    { id: 'rev', name: 'Revolut · Current' },
+    { id: 'ima', name: 'imagin · Current' },
+    { id: 'tr', name: 'Trade Republic · Card' },
+    { id: 'cash', name: 'Cash' },
+  ];
+  const CATEGORIES = [
+    { id: 'groc', name: 'Groceries', kind: 'spending', parent: null },
+    { id: 'super', name: 'Supermarket', kind: 'spending', parent: 'groc' },
+    { id: 'bakery', name: 'Bakery', kind: 'spending', parent: 'groc' },
+    { id: 'eat', name: 'Eating out', kind: 'spending', parent: null },
+    { id: 'rest', name: 'Restaurants', kind: 'spending', parent: 'eat' },
+    { id: 'coffee', name: 'Coffee', kind: 'spending', parent: 'eat' },
+    { id: 'transport', name: 'Transport', kind: 'spending', parent: null },
+    { id: 'fuel', name: 'Fuel', kind: 'spending', parent: 'transport' },
+    { id: 'pt', name: 'Public transport', kind: 'spending', parent: 'transport' },
+    { id: 'home', name: 'Home', kind: 'spending', parent: null },
+    { id: 'rent', name: 'Rent', kind: 'spending', parent: 'home' },
+    { id: 'util', name: 'Utilities', kind: 'spending', parent: 'home' },
+    { id: 'household', name: 'Household', kind: 'spending', parent: 'home' },
+    { id: 'leisure', name: 'Leisure', kind: 'spending', parent: null },
+    { id: 'subs', name: 'Subscriptions', kind: 'spending', parent: 'leisure' },
+    { id: 'cinema', name: 'Cinema', kind: 'spending', parent: 'leisure' },
+    { id: 'salary', name: 'Salary', kind: 'income', parent: null },
+    { id: 'interest', name: 'Interest', kind: 'income', parent: null },
+  ];
+  const MERCHANTS = [
+    { id: 'mercadona', name: 'Mercadona' }, { id: 'lidl', name: 'Lidl' }, { id: 'carrefour', name: 'Carrefour' },
+    { id: 'bakery', name: 'Panadería Lola' }, { id: 'barmanolo', name: 'Bar Manolo' }, { id: 'cafe', name: 'Café Central' },
+    { id: 'repsol', name: 'Repsol' }, { id: 'metro', name: 'Metro de Madrid' }, { id: 'landlord', name: 'Landlord' },
+    { id: 'iberdrola', name: 'Iberdrola' }, { id: 'netflix', name: 'Netflix' }, { id: 'spotify', name: 'Spotify' },
+    { id: 'cinesa', name: 'Cinesa' }, { id: 'acme', name: 'Acme Iberia (employer)' }, { id: 'revint', name: 'Revolut interest' },
+  ];
+  const byId = (list, id) => list.find(x => x.id === id);
+  const catName = id => id === UNCAT ? 'Uncategorised' : (byId(CATEGORIES, id)?.name ?? id);
+  const kindOfCategory = id => byId(CATEGORIES, id)?.kind;
+
+  function buildTransactions() {
+    const txs = []; let n = 0;
+    const add = (date, account, merchant, amount, category, extra = {}) => {
+      if (date > TODAY) return;
+      txs.push({ id: 't' + (++n), date, account, merchant, amount, category, split: null, transfer: null, refund: false, text: '', ...extra });
+    };
+    const d = (m, day) => `2026-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const lastDay = m => new Date(Date.UTC(2026, m, 0)).getUTCDate();
+    for (let m = 7; m <= 10; m++) {
+      add(d(m, 1), 'ima', 'landlord', -85000, 'rent');
+      add(d(m, 1), 'rev', 'metro', -5460, 'pt');
+      add(d(m, 3), 'rev', 'netflix', -1299, 'subs');
+      add(d(m, 5), 'rev', 'spotify', -1099, 'subs');
+      add(d(m, 8), 'ima', 'iberdrola', -(5800 + m * 310), 'util');
+      add(d(m, 2), 'ima', null, -30000, null, { transfer: 'x' + m, text: 'Transfer to Revolut' });
+      add(d(m, 2), 'rev', null, 30000, null, { transfer: 'x' + m, text: 'Transfer from imagin' });
+      [2, 6, 10, 14, 18, 22, 26, 30].forEach(day => { if (day <= lastDay(m)) add(d(m, day), 'rev', 'mercadona', -(2800 + ((day * 7 + m * 13) % 45) * 100 + ((day * 37 + m) % 100)), 'super'); });
+      [4, 16, 27].forEach(day => add(d(m, day), 'tr', 'lidl', -(1900 + ((day * 11 + m * 5) % 30) * 100 + ((day * 13) % 100)), 'super'));
+      [9, 21].forEach(day => add(d(m, day), 'cash', 'bakery', -(350 + ((day + m) % 5) * 60), 'bakery'));
+      [7, 15, 24].forEach(day => add(d(m, day), 'tr', 'barmanolo', -(2500 + ((day * 3 + m * 7) % 20) * 100 + 50), 'rest'));
+      [3, 5, 11, 13, 17, 19, 23, 25].forEach(day => add(d(m, day), 'cash', 'cafe', -240, 'coffee'));
+      add(d(m, 12), 'tr', 'repsol', -(5500 + ((m * 17) % 10) * 100), 'fuel');
+      add(d(m, 20), 'rev', 'cinesa', -990, 'cinema');
+      add(d(m, 28), 'ima', 'acme', 265000, 'salary');
+      add(d(m, lastDay(m)), 'rev', 'revint', 312 + m, 'interest');
+    }
+    add('2026-10-10', 'tr', 'barmanolo', -6200, 'rest');
+    add('2026-10-12', 'rev', 'carrefour', -9640, null, { split: [{ amount: -7140, category: 'super' }, { amount: -2500, category: 'household' }] });
+    add('2026-10-17', 'tr', 'lidl', 1500, 'super', { refund: true });
+    add('2026-10-11', 'rev', null, -750, null, { text: 'TPV 0093 MADRID' });
+    add('2026-10-18', 'rev', null, -1800, null, { text: 'BIZUM PAGO 4471' });
+    txs.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+    return txs;
+  }
+  const TXS = buildTransactions();
+
+  /* ---- dates ---- */
+  const parse = s => { const [y, m, d] = s.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d)); };
+  const iso = dt => dt.toISOString().slice(0, 10);
+  const addDays = (s, n) => { const t = parse(s); t.setUTCDate(t.getUTCDate() + n); return iso(t); };
+  const daysBetween = (a, b) => Math.round((parse(b) - parse(a)) / 86400000) + 1;
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const dm = s => { const t = parse(s); return `${t.getUTCDate()} ${MONTHS[t.getUTCMonth()]}`; };
+
+  function rangeFor(period, offset = 0) {
+    const t = parse(TODAY);
+    let start, end, label, short;
+    if (period.unit === 'week') {
+      const monday = addDays(TODAY, -((t.getUTCDay() + 6) % 7));
+      start = addDays(monday, 7 * offset); end = addDays(start, 6);
+      label = `Week of ${dm(start)}`; short = dm(start);
+    } else if (period.unit === 'month') {
+      start = iso(new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + offset, 1)));
+      end = iso(new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + offset + 1, 0)));
+      const s = parse(start); label = `${MONTHS_LONG[s.getUTCMonth()]} ${s.getUTCFullYear()}`; short = MONTHS[s.getUTCMonth()];
+    } else if (period.unit === 'year') {
+      const y = t.getUTCFullYear() + offset; start = `${y}-01-01`; end = `${y}-12-31`; label = String(y); short = String(y);
+    } else {
+      const len = daysBetween(period.from, period.to);
+      start = addDays(period.from, len * offset); end = addDays(period.to, len * offset);
+      label = `${dm(start)} – ${dm(end)}`; short = dm(start);
+    }
+    const unfinished = end > TODAY && start <= TODAY;
+    const until = end > TODAY ? TODAY : end;
+    return { start, end, until, label, short, unfinished, future: start > TODAY };
+  }
+
+  /* ---- units ---- */
+  const UNIT_WORD = { money: 'money', count: 'a count', percent: 'a percentage', change: 'a change', pp: 'a change in points' };
+  function unitOf(metric, saved, seen = new Set()) {
+    if (metric.source !== 'combine') return metric.measure === 'count' ? 'count' : 'money';
+    if (seen.has(metric.id)) return 'invalid';
+    const s2 = new Set(seen); if (metric.id) s2.add(metric.id);
+    const A = byId(saved, metric.a), B = byId(saved, metric.b);
+    const ua = A ? unitOf(A, saved, s2) : null, ub = B ? unitOf(B, saved, s2) : null;
+    if (metric.op === 'change') {
+      if (!ua) return null;
+      if (ua === 'money' || ua === 'count') return 'change';
+      if (ua === 'percent') return 'pp';
+      return 'invalid';
+    }
+    if (!ua || !ub) return null;
+    return combineUnit(metric.op, ua, ub).unit;
+  }
+  function combineUnit(op, ua, ub) {
+    const ok = ['money', 'count', 'percent'];
+    if (!ok.includes(ua) || !ok.includes(ub)) return { unit: 'invalid', why: 'A change cannot be combined again; use it on its own.' };
+    if (op === 'difference') {
+      if (ua !== ub) return { unit: 'invalid', why: `A difference needs two Metrics in the same unit, but one is ${UNIT_WORD[ua]} and the other is ${UNIT_WORD[ub]}.` };
+      return { unit: ua === 'percent' ? 'pp' : ua };
+    }
+    if (ua === ub && ua !== 'percent') return { unit: 'percent' };
+    if (ua === 'money' && ub === 'count') return { unit: 'money' };
+    return { unit: 'invalid', why: `A ratio of ${UNIT_WORD[ua]} to ${UNIT_WORD[ub]} has no meaning here. Ratios work for money ÷ money, count ÷ count, or money ÷ count.` };
+  }
+
+  /* ---- evaluation ---- */
+  function lineKind(line) { return line.category ? kindOfCategory(line.category) : (line.amount < 0 ? 'spending' : 'income'); }
+  function inCategories(lineCat, selected) {
+    if (!selected.length) return true;
+    if (!lineCat) return selected.includes(UNCAT);
+    const c = byId(CATEGORIES, lineCat);
+    return selected.includes(lineCat) || (c.parent && selected.includes(c.parent));
+  }
+  function subPeriods(range, unit) {
+    const from = range.start < FIRST_DATE ? FIRST_DATE : range.start;
+    const to = range.until;
+    if (from > to) return null;
+    if (unit === 'day') return { n: daysBetween(from, to), what: 'days' };
+    const keys = new Set();
+    for (let s = from; s <= to; s = addDays(s, 1)) {
+      const t = parse(s);
+      if (unit === 'month') keys.add(s.slice(0, 7));
+      else { const monday = addDays(s, -((t.getUTCDay() + 6) % 7)); keys.add(monday); }
+    }
+    return { n: keys.size, what: unit === 'month' ? 'months' : 'weeks' };
+  }
+
+  function evaluateSimple(m, range) {
+    if (range.future) return { value: null, unit: unitOf(m), notes: [], reason: 'This period has not started.' };
+    if (range.end < FIRST_DATE) return { value: null, unit: unitOf(m), notes: [], reason: 'Before your first Transaction.' };
+    const f = m.filters;
+    let sum = 0, refundTotal = 0, uncat = 0, splitLines = 0, transfers = 0;
+    const counted = new Set(), refunds = new Set();
+    for (const tx of TXS) {
+      if (tx.date < range.start || tx.date > range.until) continue;
+      if (f.accounts.length && !f.accounts.includes(tx.account)) continue;
+      if (tx.transfer) { transfers++; continue; }
+      if (f.merchants.length && !f.merchants.includes(tx.merchant)) continue;
+      const lines = tx.split ? tx.split.map(s => ({ amount: s.amount, category: s.category, split: true })) : [{ amount: tx.amount, category: tx.category, split: false }];
+      for (const line of lines) {
+        if (lineKind(line) !== m.source) continue;
+        if (!inCategories(line.category, f.categories)) continue;
+        const v = m.source === 'spending' ? -line.amount : line.amount;
+        sum += v;
+        if (v > 0) counted.add(tx.id);
+        if (tx.refund) { refunds.add(tx.id); refundTotal += -v; }
+        if (line.split) splitLines++;
+        if (!line.category) uncat += v;
+      }
+    }
+    const notes = [];
+    const n = counted.size;
+    notes.push(`${n} Transaction${n === 1 ? '' : 's'} counted, ${range.unfinished ? dm(range.start) + ' to today' : dm(range.start) + ' – ' + dm(range.end)}`);
+    if (refunds.size) notes.push(`${refunds.size} Refund lowered it by ${fmtMoney(refundTotal)}`);
+    if (splitLines) notes.push(`${splitLines} Split line counted on its own, not the whole Transaction`);
+    if (uncat && !f.categories.includes(UNCAT)) notes.push(`Includes ${fmtMoney(uncat)} still Uncategorised`);
+    if (transfers) notes.push(`${transfers} Transfer leg${transfers === 1 ? '' : 's'} left out`);
+    let value = null, reason = null;
+    if (m.measure === 'sum') value = sum;
+    else if (m.measure === 'count') value = n;
+    else if (m.measure === 'avgTx') { if (n) { value = sum / n; notes.push(`${fmtMoney(sum)} ÷ ${n} Transactions`); } else reason = 'No Transactions to average.'; }
+    else {
+      const unit = { avgDay: 'day', avgWeek: 'week', avgMonth: 'month' }[m.measure];
+      const sp = subPeriods(range, unit);
+      if (sp) { value = sum / sp.n; notes.push(`${fmtMoney(sum)} ÷ ${sp.n} ${sp.what}${range.unfinished ? ' so far' : ''}`); } else reason = 'Nothing to average.';
+    }
+    return { value, unit: unitOf(m), notes, reason, rawSum: sum, count: n };
+  }
+
+  function evaluate(m, range, saved, depth = 0) {
+    if (depth > 8) return { value: null, unit: 'invalid', notes: [], reason: 'These Metrics refer to each other in a loop.' };
+    if (m.source !== 'combine') return evaluateSimple(m, range);
+    const unit = unitOf(m, saved);
+    const A = byId(saved, m.a), B = byId(saved, m.b);
+    if (!A || (m.op !== 'change' && !B)) return { value: null, unit, notes: [], reason: 'Choose the Metrics to combine.' };
+    if (unit === 'invalid') return { value: null, unit, notes: [], reason: 'These Metrics cannot be combined this way.' };
+    const ra = evaluate(A, range, saved, depth + 1);
+    const notes = [`Both sides measured over ${range.label}${range.unfinished ? ', to today' : ''}`];
+    if (m.op === 'change') {
+      const prevRange = shiftRange(m.period, range, -1);
+      const rp = evaluate(A, prevRange, saved, depth + 1);
+      notes[0] = `${A.name}: ${fmtValue(ra.value, ra.unit)} now, ${fmtValue(rp.value, rp.unit)} in ${prevRange.label}`;
+      if (range.unfinished) notes.push(`Compares part of this period with all of the previous one`);
+      if (ra.value == null || rp.value == null) return { value: null, unit, notes, reason: ra.reason || rp.reason || 'No value to compare.' };
+      if (unit === 'pp') return { value: ra.value - rp.value, unit, notes };
+      if (rp.value === 0) return { value: null, unit, notes, reason: `${A.name} was zero in ${prevRange.label}, so there is no change to show.` };
+      return { value: (ra.value - rp.value) / Math.abs(rp.value) * 100, unit, notes };
+    }
+    const rb = evaluate(B, range, saved, depth + 1);
+    notes.push(`${A.name} ${fmtValue(ra.value, ra.unit)} ${m.op === 'ratio' ? '÷' : '−'} ${B.name} ${fmtValue(rb.value, rb.unit)}`);
+    if (ra.value == null || rb.value == null) return { value: null, unit, notes, reason: ra.reason || rb.reason };
+    if (m.op === 'difference') return { value: ra.value - rb.value, unit, notes };
+    if (rb.value === 0) return { value: null, unit, notes, reason: `Cannot divide by zero: ${B.name} is ${fmtValue(0, rb.unit)} in this period.` };
+    return { value: unit === 'percent' ? ra.value / rb.value * 100 : ra.value / rb.value, unit, notes };
+  }
+  function shiftRange(period, range, by) {
+    // previous period of the same kind; for this prototype the current range is always offset 0 or a history step
+    const off = periodOffsetOf(period, range) + by;
+    return rangeFor(period, off);
+  }
+  function periodOffsetOf(period, range) {
+    for (let o = 0; o > -40; o--) if (rangeFor(period, o).start === range.start) return o;
+    return 0;
+  }
+
+  function history(m, saved) {
+    const out = [];
+    for (let o = -5; o <= 0; o++) {
+      const r = rangeFor(m.period, o);
+      const e = evaluate(m, r, saved);
+      out.push({ label: r.short, value: e.value, unit: e.unit, current: o === 0 });
+    }
+    return out;
+  }
+
+  function projection(m, range, result) {
+    if (m.source === 'combine' || !range.unfinished || m.period.unit === 'custom') return null;
+    if (!(m.measure === 'sum' || m.measure === 'count') || result.value == null) return null;
+    const total = daysBetween(range.start, range.end), gone = daysBetween(range.start, range.until);
+    return result.value * total / gone;
+  }
+
+  function toDisplay(v, unit) { return unit === 'money' ? v / 100 : v; }
+  function kpiStatus(m, saved) {
+    if (!m.kpi) return null;
+    const range = rangeFor(m.period, 0);
+    const now = evaluate(m, range, saved);
+    const { target, direction } = m.kpi;
+    if (now.value == null) return { tone: 'none', text: 'No value this period' };
+    const proj = projection(m, range, now);
+    if (target != null && direction) {
+      const basis = proj ?? now.value;
+      const b = toDisplay(basis, now.unit);
+      const good = direction === 'lower' ? b <= target : b >= target;
+      const tgt = fmtTarget(target, now.unit);
+      const text = proj != null ? `${good ? 'On track' : 'Off track'} · on pace for ${fmtValue(proj, now.unit)} of ${tgt}` : `${good ? 'On target' : 'Off target'} · target ${tgt}`;
+      return { tone: good ? 'good' : 'bad', text };
+    }
+    if (target != null) return { tone: 'none', text: `Target ${fmtTarget(target, now.unit)} · no direction, so no verdict` };
+    if (direction) {
+      const prev = evaluate(m, rangeFor(m.period, -1), saved);
+      if (prev.value == null) return { tone: 'none', text: 'Nothing to compare with last period' };
+      const better = direction === 'lower' ? now.value < prev.value : now.value > prev.value;
+      return { tone: better ? 'good' : 'bad', text: `${better ? 'Better' : 'Worse'} than last period (${fmtValue(prev.value, prev.unit)})` };
+    }
+    return { tone: 'none', text: 'Pinned, no target or direction' };
+  }
+
+  /* ---- formatting ---- */
+  function fmtMoney(c) {
+    const neg = c < 0, a = Math.abs(Math.round(c));
+    return (neg ? '−' : '') + '€' + Math.floor(a / 100).toLocaleString('en-GB') + '.' + String(a % 100).padStart(2, '0');
+  }
+  function fmtValue(v, unit) {
+    if (v == null || Number.isNaN(v)) return '—';
+    const sgn = x => (x < 0 ? '−' : '+');
+    if (unit === 'money') return fmtMoney(v);
+    if (unit === 'count') return String(Math.round(v));
+    if (unit === 'percent') return (v < 0 ? '−' : '') + Math.abs(v).toFixed(1) + '%';
+    if (unit === 'change') return sgn(v) + Math.abs(v).toFixed(1) + '%';
+    if (unit === 'pp') return sgn(v) + Math.abs(v).toFixed(1) + ' pts';
+    return '—';
+  }
+  function fmtTarget(t, unit) {
+    if (unit === 'money') return fmtMoney(Math.round(t * 100));
+    if (unit === 'percent') return t + '%';
+    if (unit === 'change') return (t < 0 ? '−' : '+') + Math.abs(t) + '%';
+    if (unit === 'pp') return t + ' pts';
+    return String(t);
+  }
+
+  /* ---- names and descriptions ---- */
+  const MEASURES = { sum: 'Sum', count: 'Count', avgTx: 'Average per Transaction', avgDay: 'Average per day', avgWeek: 'Average per week', avgMonth: 'Average per month' };
+  const PERIODS = { week: 'This week', month: 'This month', year: 'This year', custom: 'Custom dates' };
+  const OPS = { ratio: 'Ratio (A ÷ B)', difference: 'Difference (A − B)', change: 'Change vs previous period' };
+  function autoName(m, saved) {
+    if (m.source === 'combine') {
+      const A = byId(saved, m.a)?.name ?? 'A', B = byId(saved, m.b)?.name ?? 'B';
+      return m.op === 'ratio' ? `${A} ÷ ${B}` : m.op === 'difference' ? `${A} − ${B}` : `Change in ${A}`;
+    }
+    const f = m.filters;
+    const parts = [...f.categories.map(catName), ...f.merchants.map(id => byId(MERCHANTS, id).name), ...f.accounts.map(id => byId(ACCOUNTS, id).name)];
+    const base = (parts.length ? parts.join(' + ') + ' ' : '') + (m.source === 'spending' ? 'spending' : 'income');
+    const n = { sum: base, count: `Count of ${base}`, avgTx: `Average ${base} per Transaction`, avgDay: `${base} per day`, avgWeek: `${base} per week`, avgMonth: `${base} per month` }[m.measure];
+    return n.charAt(0).toUpperCase() + n.slice(1);
+  }
+  function dependsOn(m, id, saved, depth = 0) {
+    if (!m || m.source !== 'combine' || depth > 8) return false;
+    if (m.a === id || m.b === id) return true;
+    return dependsOn(byId(saved, m.a), id, saved, depth + 1) || dependsOn(byId(saved, m.b), id, saved, depth + 1);
+  }
+  function usedBy(id, saved) { return saved.filter(s => s.id !== id && dependsOn(s, id, saved)).map(s => s.name); }
+
+  /* ---- reducer ---- */
+  const SUB_ORDER = { avgDay: 1, avgWeek: 2, avgMonth: 3 };
+  const PERIOD_ORDER = { week: 2, month: 3, year: 4, custom: 9 };
+  function newDraft() {
+    return { id: null, name: '', autoName: true, source: 'spending', filters: { categories: [], merchants: [], accounts: [] },
+      measure: 'sum', period: { unit: 'month', from: '2026-09-15', to: '2026-10-14' }, op: 'ratio', a: null, b: null, kpi: null };
+  }
+  const clone = x => JSON.parse(JSON.stringify(x));
+  function initialState() { return { draft: newDraft(), saved: [], notice: null, nextId: 1 }; }
+  const refId = (state, action) => action.id ?? state.saved.find(s => s.name === action.name)?.id ?? null;
+
+  function reduce(state, action) {
+    const s = clone(state); s.notice = null;
+    const d = s.draft;
+    const reject = text => ({ ...clone(state), notice: { kind: 'rejected', text } });
+    const named = () => { if (d.autoName) d.name = autoName(d, s.saved); };
+    switch (action.type) {
+      case 'reset': return initialState();
+      case 'new': s.draft = newDraft(); s.draft.name = autoName(s.draft, s.saved); return s;
+      case 'open': { const m = s.saved.find(x => x.id === action.id); if (m) s.draft = clone(m); return s; }
+      case 'source':
+        if (action.value === 'combine' && !s.saved.filter(x => x.id !== d.id).length) return reject('Save at least one Metric first: combining works on saved Metrics.');
+        if (action.value !== 'combine' && d.source !== 'combine') {
+          const before = d.filters.categories.length;
+          d.filters.categories = d.filters.categories.filter(c => c === UNCAT ? action.value === 'spending' || action.value === 'income' : kindOfCategory(c) === action.value);
+          if (before !== d.filters.categories.length) s.notice = { kind: 'info', text: 'Categories of the other kind were removed from the filter.' };
+        }
+        d.source = action.value; named(); return s;
+      case 'toggle': {
+        const list = d.filters[action.group];
+        const i = list.indexOf(action.id);
+        if (i >= 0) { list.splice(i, 1); named(); return s; }
+        if (action.group === 'categories' && action.id !== UNCAT && kindOfCategory(action.id) !== d.source)
+          return reject(`${catName(action.id)} is ${kindOfCategory(action.id) === 'income' ? 'an income' : 'a spending'} Category, and this Metric starts from ${d.source === 'spending' ? 'Spending' : 'Income'}. A Metric counts one kind only; to mix them, save two Metrics and combine them.`);
+        list.push(action.id); named(); return s;
+      }
+      case 'measure': {
+        const sub = SUB_ORDER[action.value];
+        if (sub && d.period.unit !== 'custom' && sub >= PERIOD_ORDER[d.period.unit])
+          return reject(`${MEASURES[action.value]} needs a period longer than a ${{ 1: 'day', 2: 'week', 3: 'month' }[sub]}. Pick a longer period first.`);
+        d.measure = action.value; named(); return s;
+      }
+      case 'period': {
+        d.period.unit = action.value;
+        const sub = SUB_ORDER[d.measure];
+        if (sub && action.value !== 'custom' && sub >= PERIOD_ORDER[action.value]) { d.measure = 'sum'; s.notice = { kind: 'info', text: `The measure went back to Sum: ${MEASURES[state.draft.measure].toLowerCase()} does not fit inside ${PERIODS[action.value].toLowerCase()}.` }; }
+        named(); return s;
+      }
+      case 'custom': {
+        const from = action.from ?? d.period.from, to = action.to ?? d.period.to;
+        if (from > to) return reject('The start date must be on or before the end date.');
+        d.period.from = from; d.period.to = to; return s;
+      }
+      case 'op': {
+        d.op = action.value;
+        if (d.op !== 'change' && d.a && d.b) {
+          const A = byId(s.saved, d.a), B = byId(s.saved, d.b);
+          const r = combineUnit(d.op, unitOf(A, s.saved), unitOf(B, s.saved));
+          if (r.unit === 'invalid') { d.b = null; s.notice = { kind: 'info', text: 'Metric B was cleared: ' + r.why }; }
+        }
+        named(); return s;
+      }
+      case 'operand': {
+        const id = refId(s, action);
+        if (!id) return reject('There is no saved Metric with that name.');
+        if (d.id && (id === d.id || dependsOn(byId(s.saved, id), d.id, s.saved))) return reject('A Metric cannot be built from itself.');
+        const other = action.slot === 'a' ? d.b : d.a;
+        if (d.op !== 'change' && other) {
+          const ua = unitOf(byId(s.saved, action.slot === 'a' ? id : other), s.saved);
+          const ub = unitOf(byId(s.saved, action.slot === 'a' ? other : id), s.saved);
+          const r = combineUnit(d.op, ua, ub);
+          if (r.unit === 'invalid') return reject(r.why);
+        }
+        if (d.op === 'change' && action.slot === 'a') {
+          const u = unitOf(byId(s.saved, id), s.saved);
+          if (u === 'change' || u === 'pp') return reject('That Metric is already a change; a change of a change is not offered.');
+        }
+        d[action.slot] = id; named(); return s;
+      }
+      case 'name': d.name = action.value.trim() || autoName(d, s.saved); d.autoName = !action.value.trim(); return s;
+      case 'save': {
+        const problems = problemsOf(d, s.saved);
+        if (problems.length) return reject('Cannot save yet: ' + problems.join(' '));
+        if (s.saved.some(x => x.name === d.name && x.id !== d.id)) return reject(`There is already a Metric called “${d.name}”. Give this one another name.`);
+        if (!d.id) { d.id = 'm' + s.nextId++; s.saved.push(clone(d)); }
+        else s.saved[s.saved.findIndex(x => x.id === d.id)] = clone(d);
+        s.notice = { kind: 'info', text: `Saved “${d.name}”.` + (usedBy(d.id, s.saved).length ? ` Also changes ${usedBy(d.id, s.saved).join(', ')}.` : '') };
+        return s;
+      }
+      case 'pin': {
+        d.kpi = d.kpi ?? { target: null, direction: null };
+        const r = reduce({ ...s, draft: d }, { type: 'save' });
+        if (r.notice?.kind === 'rejected') return reject(r.notice.text.replace('Cannot save yet', 'Cannot pin yet'));
+        r.notice = { kind: 'info', text: `“${d.name}” is now a KPI.` }; return r;
+      }
+      case 'unpin': d.kpi = null; return reduce(s, { type: 'save' });
+      case 'target': {
+        if (!d.kpi) return reject('Pin the Metric as a KPI first.');
+        if (action.value === '' || action.value == null) { d.kpi.target = null; return reduce(s, { type: 'save' }); }
+        const v = Number(action.value);
+        if (!Number.isFinite(v)) return reject('The target must be a number.');
+        d.kpi.target = v; return reduce(s, { type: 'save' });
+      }
+      case 'direction': if (!d.kpi) return reject('Pin the Metric as a KPI first.'); d.kpi.direction = action.value || null; return reduce(s, { type: 'save' });
+      default: return state;
+    }
+  }
+  function problemsOf(d, saved) {
+    const p = [];
+    if (d.source === 'combine') {
+      if (!d.a) p.push('choose Metric A.');
+      if (d.op !== 'change' && !d.b) p.push('choose Metric B.');
+      if (unitOf(d, saved) === 'invalid') p.push('these Metrics cannot be combined this way.');
+    }
+    return p;
+  }
+
+  function describe(d, saved) {
+    const rows = [['Name', d.name || autoName(d, saved)], ['Starts from', { spending: 'Spending', income: 'Income', combine: 'Combine saved Metrics' }[d.source]]];
+    if (d.source !== 'combine') {
+      const f = d.filters;
+      rows.push(['Categories', f.categories.length ? f.categories.map(catName).join(', ') + (f.categories.some(c => byId(CATEGORIES, c) && !byId(CATEGORIES, c).parent) ? ' (with their children)' : '') : 'Any']);
+      rows.push(['Merchants', f.merchants.length ? f.merchants.map(id => byId(MERCHANTS, id).name).join(', ') : 'Any']);
+      rows.push(['Accounts', f.accounts.length ? f.accounts.map(id => byId(ACCOUNTS, id).name).join(', ') : 'Any']);
+      rows.push(['Measure', MEASURES[d.measure]]);
+    } else {
+      rows.push(['Operation', OPS[d.op]]);
+      rows.push(['Metric A', byId(saved, d.a)?.name ?? 'Not chosen']);
+      if (d.op !== 'change') rows.push(['Metric B', byId(saved, d.b)?.name ?? 'Not chosen']);
+    }
+    const r = rangeFor(d.period, 0);
+    rows.push(['Period', `${PERIODS[d.period.unit]} (${r.label}${r.unfinished ? ', to ' + dm(TODAY) : ''})`]);
+    const u = unitOf(d, saved);
+    rows.push(['Unit', u ? { money: 'Money (€)', count: 'Count of Transactions', percent: 'Percentage', change: 'Change in %', pp: 'Change in percentage points', invalid: 'Invalid combination' }[u] : 'Not known yet']);
+    rows.push(['Saved', d.id ? 'Yes' : 'Not yet']);
+    rows.push(['KPI', d.kpi ? `Pinned · target ${d.kpi.target == null ? 'none' : fmtTarget(d.kpi.target, u)} · ${d.kpi.direction ? (d.kpi.direction === 'lower' ? 'lower is better' : 'higher is better') : 'no direction'}` : 'Not pinned']);
+    const e = evaluate(d, r, saved);
+    rows.push(['Value now', e.value == null ? (e.reason || '—') : fmtValue(e.value, e.unit)]);
+    return rows;
+  }
+
+  return { TODAY, UNCAT, ACCOUNTS, CATEGORIES, MERCHANTS, TXS, MEASURES, PERIODS, OPS, initialState, reduce, rangeFor, evaluate, history, kpiStatus, projection, unitOf, fmtValue, fmtTarget, describe, usedBy, catName, problemsOf, SUB_ORDER, PERIOD_ORDER };
+})();
+
+/* ===================== Page ===================== */
+const WALKS = [
+  { title: 'Grocery budget', text: 'The everyday KPI: how much goes on groceries this month, capped at €450. Watch three things: the Lidl Refund lowers the total, the Carrefour Split counts only its supermarket line, and because October is only 20 days old the status uses the pace projection: €364 so far is under €450, but the pace is not.',
+    steps: [
+      ['Start a new Metric', [{ type: 'new' }]],
+      ['Start from Spending', [{ type: 'source', value: 'spending' }]],
+      ['Only include the Groceries Category', [{ type: 'toggle', group: 'categories', id: 'groc' }]],
+      ['Measure the sum, this month', [{ type: 'measure', value: 'sum' }, { type: 'period', value: 'month' }]],
+      ['Pin it as a KPI', [{ type: 'pin' }]],
+      ['Set a target of €450', [{ type: 'target', value: 450 }]],
+      ['Lower is better', [{ type: 'direction', value: 'lower' }]],
+    ] },
+  { title: 'Savings rate', text: 'Savings rate is (income − spending) ÷ income. No single Metric can say that, so it is built from saved Metrics: two simple ones, a difference, then a ratio. Watch October: the salary arrives on the 28th, so this month’s rate cannot be computed yet, while the history shows the past months. The last step switches the period to the year.',
+    steps: [
+      ['Save “Income”, this month', [{ type: 'new' }, { type: 'source', value: 'income' }, { type: 'period', value: 'month' }, { type: 'name', value: 'Income' }, { type: 'save' }]],
+      ['Save “Spending”, this month', [{ type: 'new' }, { type: 'source', value: 'spending' }, { type: 'period', value: 'month' }, { type: 'name', value: 'Spending' }, { type: 'save' }]],
+      ['Combine: Income − Spending', [{ type: 'new' }, { type: 'source', value: 'combine' }, { type: 'op', value: 'difference' }, { type: 'operand', slot: 'a', name: 'Income' }, { type: 'operand', slot: 'b', name: 'Spending' }]],
+      ['Save it as “Saved”', [{ type: 'name', value: 'Saved' }, { type: 'save' }]],
+      ['Combine: Saved ÷ Income', [{ type: 'new' }, { type: 'source', value: 'combine' }, { type: 'op', value: 'ratio' }, { type: 'operand', slot: 'a', name: 'Saved' }, { type: 'operand', slot: 'b', name: 'Income' }]],
+      ['Name it “Savings rate” and pin it', [{ type: 'name', value: 'Savings rate' }, { type: 'pin' }]],
+      ['Target 20%, higher is better', [{ type: 'target', value: 20 }, { type: 'direction', value: 'higher' }]],
+      ['Switch the period to this year', [{ type: 'period', value: 'year' }, { type: 'save' }]],
+    ] },
+  { title: 'Eating out vs last month', text: 'A change Metric compares a Metric with its own previous period. Here there is no target, only a direction, so the KPI says whether this month is better or worse than the last. Notice the change compares 20 days of October with all of September.',
+    steps: [
+      ['Save “Eating out”, this month', [{ type: 'new' }, { type: 'source', value: 'spending' }, { type: 'toggle', group: 'categories', id: 'eat' }, { type: 'period', value: 'month' }, { type: 'name', value: 'Eating out' }, { type: 'save' }]],
+      ['Combine: change in Eating out', [{ type: 'new' }, { type: 'source', value: 'combine' }, { type: 'op', value: 'change' }, { type: 'operand', slot: 'a', name: 'Eating out' }]],
+      ['Pin it as a KPI', [{ type: 'pin' }]],
+      ['Lower is better, no target', [{ type: 'direction', value: 'lower' }]],
+      ['Pin “Eating out” itself, lower is better', [{ type: 'open', name: 'Eating out' }, { type: 'pin' }, { type: 'direction', value: 'lower' }]],
+    ] },
+  { title: 'Should be refused', text: 'Each step tries something the builder must refuse, or accepts something surprising. Read the message under the result after each step.',
+    steps: [
+      ['Start a Spending Metric, this month', [{ type: 'new' }, { type: 'source', value: 'spending' }, { type: 'period', value: 'month' }]],
+      ['Add the Salary Category', [{ type: 'toggle', group: 'categories', id: 'salary' }]],
+      ['Average per month over this week', [{ type: 'period', value: 'week' }, { type: 'measure', value: 'avgMonth' }]],
+      ['Save “Coffees” (count) and “Spending”', [{ type: 'new' }, { type: 'toggle', group: 'categories', id: 'coffee' }, { type: 'measure', value: 'count' }, { type: 'name', value: 'Coffees' }, { type: 'save' }, { type: 'new' }, { type: 'name', value: 'Spending' }, { type: 'save' }]],
+      ['Difference: Spending − Coffees', [{ type: 'new' }, { type: 'source', value: 'combine' }, { type: 'op', value: 'difference' }, { type: 'operand', slot: 'a', name: 'Spending' }, { type: 'operand', slot: 'b', name: 'Coffees' }]],
+      ['Ratio: Coffees ÷ Spending', [{ type: 'op', value: 'ratio' }, { type: 'operand', slot: 'a', name: 'Coffees' }, { type: 'operand', slot: 'b', name: 'Spending' }]],
+      ['Ratio: Spending ÷ Coffees (accepted)', [{ type: 'new' }, { type: 'source', value: 'combine' }, { type: 'op', value: 'ratio' }, { type: 'operand', slot: 'a', name: 'Spending' }, { type: 'operand', slot: 'b', name: 'Coffees' }]],
+      ['Save a combination with nothing chosen', [{ type: 'new' }, { type: 'source', value: 'combine' }, { type: 'save' }]],
+    ] },
+  { title: 'What counts', text: 'The rules behind every number. Transfers never count as spending or income. A Refund lowers its Category. A Split counts line by line. Uncategorised spending is included in the totals but called out, and can be filtered on its own.',
+    steps: [
+      ['All spending, this month', [{ type: 'new' }, { type: 'source', value: 'spending' }, { type: 'period', value: 'month' }]],
+      ['Only the Revolut account', [{ type: 'toggle', group: 'accounts', id: 'rev' }]],
+      ['Only Groceries (any account)', [{ type: 'toggle', group: 'accounts', id: 'rev' }, { type: 'toggle', group: 'categories', id: 'groc' }]],
+      ['Only Uncategorised', [{ type: 'toggle', group: 'categories', id: 'groc' }, { type: 'toggle', group: 'categories', id: Model.UNCAT }]],
+      ['Only Home', [{ type: 'toggle', group: 'categories', id: Model.UNCAT }, { type: 'toggle', group: 'categories', id: 'home' }]],
+      ['Income into Revolut', [{ type: 'new' }, { type: 'source', value: 'income' }, { type: 'toggle', group: 'accounts', id: 'rev' }, { type: 'period', value: 'month' }]],
+    ] },
+];
+
+let state = Model.initialState();
+state = Model.reduce(state, { type: 'new' });
+const ui = { open: null, tab: 0, next: 0, last: 'Opened the prototype with a fresh Spending Metric.', changed: new Set() };
+
+function rowsMap(st) { return new Map(Model.describe(st.draft, st.saved)); }
+function apply(actions, label) {
+  const before = rowsMap(state);
+  for (const a of actions) {
+    const act = a.type === 'open' && a.name ? { type: 'open', id: state.saved.find(s => s.name === a.name)?.id } : a;
+    const prevNotice = state.notice;
+    state = Model.reduce(state, act);
+    if (state.notice?.kind === 'rejected') break;
+    if (!state.notice && prevNotice && actions.length > 1) state.notice = prevNotice;
+  }
+  const after = rowsMap(state);
+  ui.changed = new Set([...after.keys()].filter(k => before.get(k) !== after.get(k)));
+  ui.last = label;
+  render();
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function chip(label, pressed, data, dim = false) {
+  return `<button class="chip${dim ? ' dim' : ''}" aria-pressed="${pressed}" ${Object.entries(data).map(([k, v]) => `data-${k}="${esc(v)}"`).join(' ')}>${esc(label)}</button>`;
+}
+
+function renderPhone() {
+  const d = state.draft, saved = state.saved;
+  const range = Model.rangeFor(d.period, 0);
+  const res = Model.evaluate(d, range, saved);
+  const proj = Model.projection(d, range, res);
+  const hist = Model.history(d, saved);
+  const max = Math.max(...hist.map(h => Math.abs(h.value ?? 0)), 1);
+  const status = d.id ? Model.kpiStatus(saved.find(s => s.id === d.id) ?? d, saved) : null;
+  const unit = Model.unitOf(d, saved);
+  let h = '';
+  h += `<div class="phone-head"><span class="eyebrow">${d.id ? 'Edit Metric' : 'New Metric'}</span><span class="sub">${Model.TODAY === '2026-10-20' ? 'Today is Tue 20 Oct' : ''}</span></div>`;
+  h += `<label class="field" for="metric-name"><span class="sr" hidden>Name</span><input id="metric-name" class="name-input" value="${esc(d.name)}" aria-label="Metric name"></label>`;
+
+  h += `<div class="hero" aria-live="polite">`;
+  h += `<div class="cap"><span>${esc(range.label)}${range.unfinished ? ' · so far' : ''}</span>${d.kpi ? '<span class="pill solid">KPI</span>' : ''}</div>`;
+  h += res.value == null ? `<div class="val na">${esc(res.reason || '—')}</div>` : `<div class="val">${esc(Model.fmtValue(res.value, res.unit))}</div>`;
+  if (status) h += `<div><span class="pill">${status.tone === 'good' ? '↗ ' : status.tone === 'bad' ? '↘ ' : ''}${esc(status.text)}</span></div>`;
+  else if (proj != null) h += `<div class="sub" style="color:inherit">On pace for ${esc(Model.fmtValue(proj, res.unit))} by ${esc(Model.rangeFor(d.period, 0).end.slice(8))} ${esc(range.label.split(' ')[0])}</div>`;
+  if (res.notes?.length) h += `<ul>${res.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>`;
+  h += `<div class="bars" aria-label="Last six periods">${hist.map(b => {
+    const pct = b.value == null ? 0 : Math.max(3, Math.abs(b.value) / max * 100);
+    return `<div class="bar${b.current ? ' cur' : ''}${b.value == null ? ' none' : ''}" title="${esc(b.label)}: ${esc(Model.fmtValue(b.value, b.unit))}"><b>${esc(Model.fmtValue(b.value, b.unit))}</b><i style="height:${pct * 0.55}%"></i><span>${esc(b.label)}</span></div>`;
+  }).join('')}</div>`;
+  h += `</div>`;
+
+  if (state.notice) h += `<div class="notice ${state.notice.kind}" role="status">${state.notice.kind === 'rejected' ? '<strong>Refused.</strong> ' : ''}${esc(state.notice.text)}</div>`;
+
+  h += `<div class="section"><h3>Start from</h3><div class="chips">${chip('Spending', d.source === 'spending', { act: 'source', v: 'spending' })}${chip('Income', d.source === 'income', { act: 'source', v: 'income' })}${chip('Combine saved Metrics', d.source === 'combine', { act: 'source', v: 'combine' }, !saved.filter(x => x.id !== d.id).length)}</div></div>`;
+
+  if (d.source !== 'combine') {
+    const f = d.filters;
+    const groups = [
+      ['categories', 'Category', [...Model.CATEGORIES.filter(c => c.kind === d.source), { id: Model.UNCAT, name: 'Uncategorised' }, ...Model.CATEGORIES.filter(c => c.kind !== d.source)], c => (c.parent ? '· ' : '') + c.name, c => c.id !== Model.UNCAT && c.kind !== d.source],
+      ['merchants', 'Merchant', Model.MERCHANTS, m => m.name, () => false],
+      ['accounts', 'Account', Model.ACCOUNTS, a => a.name, () => false],
+    ];
+    h += `<div class="section"><h3>Only include</h3>`;
+    for (const [g, label, opts, nm, dim] of groups) {
+      const sel = f[g];
+      const summary = sel.length ? sel.map(id => g === 'categories' ? Model.catName(id) : opts.find(o => o.id === id).name).join(', ') : 'Any';
+      h += `<div class="filter-row"><button class="row-btn" data-act="openGroup" data-v="${g}" aria-expanded="${ui.open === g}"><span>${label}</span><span>${esc(summary)} ${ui.open === g ? '▴' : '▾'}</span></button>`;
+      if (ui.open === g) h += `<div class="chips">${opts.map(o => chip(nm(o), sel.includes(o.id), { act: 'toggle', g, v: o.id }, dim(o))).join('')}</div>${g === 'categories' ? '<p class="sub">Picking a parent includes its children. Dashed ones are the other kind.</p>' : ''}`;
+      h += `</div>`;
+    }
+    h += `</div>`;
+    h += `<div class="section"><h3>Measure</h3><div class="chips">${Object.entries(Model.MEASURES).map(([k, v]) => {
+      const sub = Model.SUB_ORDER[k]; const bad = sub && d.period.unit !== 'custom' && sub >= Model.PERIOD_ORDER[d.period.unit];
+      return chip(v, d.measure === k, { act: 'measure', v: k }, bad);
+    }).join('')}</div></div>`;
+  } else {
+    const others = saved.filter(s => s.id !== d.id);
+    const opt = sel => `<option value="">Choose a Metric</option>${others.map(s => `<option value="${s.id}"${s.id === sel ? ' selected' : ''}>${esc(s.name)} (${esc(Model.fmtValue(Model.evaluate(s, Model.rangeFor(d.period, 0), saved).value, Model.unitOf(s, saved)))})</option>`).join('')}`;
+    h += `<div class="section"><h3>Operation</h3><div class="chips">${Object.entries(Model.OPS).map(([k, v]) => chip(v, d.op === k, { act: 'op', v: k })).join('')}</div></div>`;
+    h += `<div class="section"><div class="${d.op === 'change' ? '' : 'two'}"><label class="field" for="op-a">Metric A<select id="op-a" data-act="operand" data-slot="a">${opt(d.a)}</select></label>${d.op === 'change' ? '' : `<label class="field" for="op-b">Metric B<select id="op-b" data-act="operand" data-slot="b">${opt(d.b)}</select></label>`}</div><p class="sub">The period below applies to both sides; the period saved on each Metric is ignored here.</p></div>`;
+  }
+
+  h += `<div class="section"><h3>Period</h3><div class="chips">${Object.entries(Model.PERIODS).map(([k, v]) => chip(v, d.period.unit === k, { act: 'period', v: k })).join('')}</div>`;
+  if (d.period.unit === 'custom') h += `<div class="two"><label class="field" for="from">From<input type="date" id="from" value="${d.period.from}" data-act="custom" data-k="from"></label><label class="field" for="to">To<input type="date" id="to" value="${d.period.to}" data-act="custom" data-k="to"></label></div><p class="sub">History steps back by the same number of days.</p>`;
+  h += `</div>`;
+
+  if (d.kpi) {
+    const unitWord = { money: '€', percent: '%', count: 'Transactions', change: '% change', pp: 'points' }[unit] ?? '';
+    h += `<div class="section"><h3>KPI</h3><div class="two"><label class="field" for="target">Target (${esc(unitWord)}, optional)<input type="number" step="any" id="target" value="${d.kpi.target ?? ''}" data-act="target" placeholder="None"></label><div class="field">Direction<div class="chips">${chip('Lower is better', d.kpi.direction === 'lower', { act: 'direction', v: 'lower' })}${chip('Higher is better', d.kpi.direction === 'higher', { act: 'direction', v: 'higher' })}${chip('None', !d.kpi.direction, { act: 'direction', v: '' })}</div></div></div></div>`;
+  }
+
+  h += `<div class="actions"><button class="btn primary" data-act="save">${d.id ? 'Save changes' : 'Save Metric'}</button>${d.kpi ? '<button class="btn" data-act="unpin">Unpin KPI</button>' : '<button class="btn" data-act="pin">Pin as KPI</button>'}<button class="btn" data-act="new">New Metric</button></div>`;
+
+  h += `<div class="section"><h3>Your Metrics</h3>`;
+  if (!saved.length) h += `<p class="sub">Nothing saved yet. Saved Metrics appear here and can be combined.</p>`;
+  else h += `<div class="saved-list">${saved.map(s => {
+    const r = Model.evaluate(s, Model.rangeFor(s.period, 0), saved);
+    return `<button class="saved-tile${s.id === d.id ? ' active' : ''}" data-act="open" data-v="${s.id}"><span><span class="nm">${esc(s.name)}</span><br><span class="sub">${s.kpi ? 'KPI · ' : ''}${esc(Model.PERIODS[s.period.unit])}</span></span><span class="v">${esc(Model.fmtValue(r.value, r.unit))}</span></button>`;
+  }).join('')}</div>`;
+  h += `</div>`;
+  document.getElementById('phone').innerHTML = h;
+}
+
+function renderWalk() {
+  document.getElementById('tabs').innerHTML = WALKS.map((w, i) => `<button class="tab" role="tab" aria-selected="${ui.tab === i}" data-act="tab" data-v="${i}">${esc(w.title)}</button>`).join('');
+  const w = WALKS[ui.tab];
+  let h = `<div class="walk"><p>${esc(w.text)}</p><div class="actions"><button class="btn" data-act="startwalk">${ui.next > 0 ? 'Restart this walkthrough' : 'Start this walkthrough'}</button></div><ol class="steps">`;
+  w.steps.forEach(([label], i) => {
+    const cls = i < ui.next ? 'done' : i === ui.next ? 'next' : '';
+    h += `<li><button class="step ${cls}" data-act="step" data-v="${i}" ${i === ui.next ? '' : 'disabled'}><span class="n">${i + 1}</span><span>${esc(label)}</span></button></li>`;
+  });
+  h += `</ol>${ui.next >= w.steps.length ? '<p class="sub">Done. Keep playing in the builder, or pick another walkthrough.</p>' : ''}</div>`;
+  document.getElementById('walk').innerHTML = h;
+}
+
+function renderState() {
+  document.getElementById('lastaction').textContent = 'Last action: ' + ui.last + (ui.changed.size ? ' Highlighted rows changed.' : '');
+  const rows = Model.describe(state.draft, state.saved);
+  let h = `<h3>The Metric on screen</h3><div class="kv">${rows.map(([k, v]) => `<div class="k${ui.changed.has(k) ? ' ch' : ''}">${esc(k)}</div><div class="${ui.changed.has(k) ? 'ch' : ''}">${esc(v)}</div>`).join('')}</div>`;
+  h += `<h3 style="margin-top:12px">Saved Metrics</h3>`;
+  if (!state.saved.length) h += `<p class="sub">None yet.</p>`;
+  else {
+    h += `<div class="table-wrap"><table><thead><tr><th>Name</th><th>Built from</th><th>Period</th><th>KPI</th><th>Used by</th><th class="num">Now</th></tr></thead><tbody>`;
+    for (const s of state.saved) {
+      const r = Model.evaluate(s, Model.rangeFor(s.period, 0), state.saved);
+      const built = s.source === 'combine' ? `${Model.OPS[s.op]} of ${[s.a, s.b].filter(Boolean).map(id => state.saved.find(x => x.id === id)?.name).join(' and ')}` : `${s.source === 'spending' ? 'Spending' : 'Income'}, ${Model.MEASURES[s.measure].toLowerCase()}`;
+      const st = Model.kpiStatus(s, state.saved);
+      h += `<tr><td>${esc(s.name)}</td><td>${esc(built)}</td><td>${esc(Model.PERIODS[s.period.unit])}</td><td>${st ? esc(st.text) : '—'}</td><td>${esc(Model.usedBy(s.id, state.saved).join(', ') || '—')}</td><td class="num">${esc(Model.fmtValue(r.value, r.unit))}</td></tr>`;
+    }
+    h += `</tbody></table></div>`;
+  }
+  document.getElementById('state').innerHTML = h;
+}
+
+function render() {
+  const focusId = document.activeElement?.id;
+  renderPhone(); renderWalk(); renderState();
+  if (focusId) document.getElementById(focusId)?.focus?.();
+}
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (!el || el.tagName === 'SELECT' || el.tagName === 'INPUT') return;
+  const act = el.dataset.act, v = el.dataset.v;
+  switch (act) {
+    case 'openGroup': ui.open = ui.open === v ? null : v; render(); break;
+    case 'toggle': apply([{ type: 'toggle', group: el.dataset.g, id: v }], `Tapped ${el.textContent.replace(/^· /, '')}.`); break;
+    case 'source': apply([{ type: 'source', value: v }], `Chose “${el.textContent}”.`); break;
+    case 'measure': apply([{ type: 'measure', value: v }], `Chose ${el.textContent}.`); break;
+    case 'period': apply([{ type: 'period', value: v }], `Chose ${el.textContent}.`); break;
+    case 'op': apply([{ type: 'op', value: v }], `Chose ${el.textContent}.`); break;
+    case 'direction': apply([{ type: 'direction', value: v }], `Direction: ${el.textContent}.`); break;
+    case 'save': apply([{ type: 'save' }], 'Saved the Metric.'); break;
+    case 'pin': apply([{ type: 'pin' }], 'Pinned as a KPI.'); break;
+    case 'unpin': apply([{ type: 'unpin' }], 'Unpinned the KPI.'); break;
+    case 'new': ui.open = null; apply([{ type: 'new' }], 'Started a new Metric.'); break;
+    case 'open': apply([{ type: 'open', id: v }], `Opened a saved Metric.`); break;
+    case 'tab': ui.tab = Number(v); ui.next = 0; render(); break;
+    case 'startwalk': state = Model.initialState(); ui.next = 0; ui.open = null; apply([{ type: 'new' }], `Started “${WALKS[ui.tab].title}” from an empty builder.`); break;
+    case 'step': {
+      const i = Number(v); const [label, actions] = WALKS[ui.tab].steps[i];
+      if (i === 0 && ui.next === 0) state = Model.initialState();
+      ui.next = i + 1;
+      const g = actions.find(a => a.type === 'toggle'); if (g) ui.open = g.group;
+      apply(actions, `Step ${i + 1}: ${label}.`); break;
+    }
+  }
+});
+document.addEventListener('change', e => {
+  const el = e.target;
+  if (el.id === 'metric-name') apply([{ type: 'name', value: el.value }], 'Renamed the Metric.');
+  else if (el.dataset.act === 'operand' && el.value) apply([{ type: 'operand', slot: el.dataset.slot, id: el.value }], `Chose Metric ${el.dataset.slot.toUpperCase()}.`);
+  else if (el.dataset.act === 'custom') apply([{ type: 'custom', [el.dataset.k]: el.value }], 'Changed the custom dates.');
+  else if (el.dataset.act === 'target') apply([{ type: 'target', value: el.value }], 'Changed the target.');
+});
+render();
+</script>

@@ -1,0 +1,86 @@
+# Issue tracker: GitHub
+
+Issues and specs for this repo live as GitHub issues in `PabloJimenezJimenez/financeTracker`.
+
+Use `gh api` with the REST API for every operation. Claude Code cloud sessions block GitHub's
+GraphQL API, and most `gh issue` / `gh pr` subcommands (`create`, `list`, `view`, `edit`) use
+GraphQL under the hood, so they fail there. `gh api` calls work in cloud sessions and locally.
+
+All paths below are relative to `repos/PabloJimenezJimenez/financeTracker`; set it once:
+
+```sh
+R=repos/PabloJimenezJimenez/financeTracker
+```
+
+## Conventions
+
+- **Create an issue**: prints the new issue's number.
+  ```sh
+  gh api -X POST $R/issues -f title="..." -f body="$(cat <<'EOF'
+  multi-line body
+  EOF
+  )" -f 'labels[]=needs-triage' --jq .number
+  ```
+- **Read an issue**:
+  `gh api $R/issues/<n> --jq '{number, title, state, body, labels: [.labels[].name]}'`
+  and its comments: `gh api $R/issues/<n>/comments --paginate --jq '[.[].body]'`.
+- **List issues**: the issues endpoint also returns pull requests, so always filter them out.
+  `gh api "$R/issues?state=open&labels=<label>&per_page=100" --paginate --jq '[.[] | select(.pull_request | not) | {number, title, labels: [.labels[].name]}]'`
+  (drop `labels=` to list everything; `state=all` or `closed` as needed).
+- **Make an issue a sub-issue of a parent**: sub-issues take the child's database **id**, not
+  its number. `id=$(gh api $R/issues/<child> --jq .id)` then
+  `gh api -X POST $R/issues/<parent>/sub_issues -F sub_issue_id=$id`.
+  List a parent's children with `gh api $R/issues/<parent>/sub_issues --jq '[.[] | {number, title, state}]'`.
+- **Comment on an issue**: `gh api -X POST $R/issues/<n>/comments -f body="..." --jq .html_url`
+- **Apply / remove labels**: `gh api -X POST $R/issues/<n>/labels -f 'labels[]=<label>'` /
+  `gh api -X DELETE $R/issues/<n>/labels/<label>`
+- **Close**: comment first, then
+  `gh api -X PATCH $R/issues/<n> -f state=closed -f state_reason=completed` (or `not_planned`).
+
+## Pull requests as a triage surface
+
+**PRs as a request surface: no.** _(Set to `yes` if this repo treats external PRs as feature requests; `/triage` reads this flag.)_
+
+When set to `yes`, PRs run through the same labels and states as issues:
+
+- **Read a PR**: `gh api $R/pulls/<n> --jq '{number, title, body, user: .user.login, author_association}'`,
+  its comments with `gh api $R/issues/<n>/comments --jq '[.[].body]'`, and the diff with
+  `gh api -H 'Accept: application/vnd.github.diff' $R/pulls/<n>`.
+- **List external PRs for triage**: `gh api --paginate "$R/pulls?state=open" --jq '.[] | select(.author_association | IN("OWNER","MEMBER","COLLABORATOR") | not) | {number, title, author: .user.login, author_association, labels: [.labels[].name]}'`.
+- **Comment / label / close**: the issue endpoints above work for PRs too (same number space);
+  close a PR with `gh api -X PATCH $R/pulls/<n> -f state=closed`.
+
+GitHub shares one number space across issues and PRs, so a bare `#42` may be either:
+`gh api $R/issues/42 --jq '.pull_request != null'` tells you which.
+
+## When a skill says "publish to the issue tracker"
+
+Create a GitHub issue.
+
+## When a skill says "fetch the relevant ticket"
+
+Read it as in **Read an issue** above.
+
+## Wayfinding operations
+
+Used by `/wayfinder`. The **map** is a single issue with **child** issues as tickets.
+
+- **Map**: a single issue labelled `wayfinder:map`, holding the Notes / Decisions-so-far / Fog body
+  (create it as above with `-f 'labels[]=wayfinder:map'`).
+- **Child ticket**: an issue linked to the map as a GitHub sub-issue (see **Make an issue a
+  sub-issue of a parent**), labelled `wayfinder:<type>` (`research`/`prototype`/`grilling`/`task`).
+  Once claimed, the ticket is assigned to the driving dev.
+- **Blocking**: GitHub's native issue dependencies.
+  `gh api -X POST $R/issues/<child>/dependencies/blocked_by -F issue_id=$(gh api $R/issues/<blocker> --jq .id)`
+  (the blocker's database **id**, not its number). A ticket is unblocked when
+  `gh api $R/issues/<n> --jq .issue_dependencies_summary.blocked_by` is `0`.
+  Where dependencies aren't available, fall back to a `Blocked by: #<n>, #<n>` line at the top of
+  the child body.
+- **Frontier query**: list the map's open children
+  (`gh api $R/issues/<map>/sub_issues --jq '[.[] | select(.state == "open") | {number, title, assignees: [.assignees[].login]}]'`),
+  drop any with an assignee or `issue_dependencies_summary.blocked_by > 0`; first in map order wins.
+- **Claim**: `gh api -X POST $R/issues/<n>/assignees -f "assignees[]=$(gh api user --jq .login)"`,
+  the session's first write.
+- **Resolve**: comment the answer, close the issue (both as above), then append a context pointer
+  (gist + link) to the map's Decisions-so-far by editing the map body:
+  `gh api -X PATCH $R/issues/<map> -f body="..."`.
